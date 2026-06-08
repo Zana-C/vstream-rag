@@ -1,0 +1,31 @@
+workspace/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+env.bak/
+venv.bak/
+
+# Node.js
+node_modules/
+dist/
+build/
+.env
+.env.local
+
+# Media files that should not be tracked
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.jpg
+*.jpeg
+*.png
+
+# OS specific
+.DS_Store
+Thumbs.db
