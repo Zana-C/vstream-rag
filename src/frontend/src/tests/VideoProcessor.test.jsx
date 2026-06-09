@@ -44,7 +44,7 @@ describe('VideoProcessor Component', () => {
     fireEvent.change(input, { target: { files: [file] } });
     
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8000/api/video/process', expect.any(Object));
+      expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:8000/api/video/process', expect.any(Object));
     });
   });
 });

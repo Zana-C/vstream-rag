@@ -12,7 +12,7 @@ const DatabaseManager = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/courses');
+        const res = await fetch('http://127.0.0.1:8000/api/courses');
         const data = await res.json();
         if (data.status === 'success' && data.courses) {
           setExistingCourses(data.courses);
@@ -25,7 +25,7 @@ const DatabaseManager = () => {
   const fetchSlides = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/slides?course=${courseFilter}`);
+      const res = await fetch(`http://127.0.0.1:8000/api/slides?course=${courseFilter}`);
       const data = await res.json();
       if (data.status === 'success') {
         setQuestions(data.slides);
@@ -44,7 +44,7 @@ const DatabaseManager = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this slide?')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/slides/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://127.0.0.1:8000/api/slides/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.status === 'success') {
         setQuestions(q => q.filter(x => x.id !== id));
@@ -61,7 +61,7 @@ const DatabaseManager = () => {
 
   const handleSaveEdit = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/slides/${id}`, {
+      const res = await fetch(`http://127.0.0.1:8000/api/slides/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: editText })

@@ -9,7 +9,7 @@ const Sidebar = () => {
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/sessions');
+      const res = await fetch('http://127.0.0.1:8000/api/sessions');
       const data = await res.json();
       setSessions(data);
     } catch(err) { console.error(err); }
@@ -31,7 +31,7 @@ const Sidebar = () => {
     e.stopPropagation();
     if (!window.confirm('Delete this chat session completely?')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/sessions/${id}`, { method: 'DELETE' });
+      const res = await fetch(`http://127.0.0.1:8000/api/sessions/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.status === 'success') {
         setSessions(s => s.filter(x => x.id !== id));

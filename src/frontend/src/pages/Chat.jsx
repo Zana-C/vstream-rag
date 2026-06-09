@@ -41,8 +41,8 @@ const Chat = () => {
     const fetchInitData = async () => {
       try {
         const [cRes, setRes] = await Promise.all([
-          fetch('http://localhost:8000/api/courses'),
-          fetch('http://localhost:8000/api/settings')
+          fetch('http://127.0.0.1:8000/api/courses'),
+          fetch('http://127.0.0.1:8000/api/settings')
         ]);
         const cData = await cRes.json();
         if (cData.status === 'success' && cData.courses) setExistingCourses(cData.courses);
@@ -65,7 +65,7 @@ const Chat = () => {
 
   const loadSession = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/sessions/${id}/messages`);
+      const res = await fetch(`http://127.0.0.1:8000/api/sessions/${id}/messages`);
       const msgs = await res.json();
       if (msgs.length > 0) {
         setMessages(msgs);
@@ -79,7 +79,7 @@ const Chat = () => {
   const createSession = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/sessions?title=New+Chat&course=${encodeURIComponent(course)}`,
+        `http://127.0.0.1:8000/api/sessions?title=New+Chat&course=${encodeURIComponent(course)}`,
         { method: 'POST' }
       );
       const session = await res.json();
@@ -101,7 +101,7 @@ const Chat = () => {
       wsRef.current.close();
     }
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat/${sessionId}`);
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${sessionId}`);
     wsRef.current = ws;
 
     ws.onopen = () => setIsConnected(true);
@@ -161,7 +161,7 @@ const Chat = () => {
     if (!window.confirm('Delete this message?')) return;
     
     try {
-      const res = await fetch(`http://localhost:8000/api/messages/${msgId}`, { method: 'DELETE' });
+      const res = await fetch(`http://127.0.0.1:8000/api/messages/${msgId}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.status === 'success') {
         setMessages(msgs => msgs.filter(m => m.id !== msgId));
@@ -174,7 +174,7 @@ const Chat = () => {
   const handleSaveSettings = async () => {
     setSavingSettings(true);
     try {
-      const res = await fetch('http://localhost:8000/api/settings', {
+      const res = await fetch('http://127.0.0.1:8000/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
