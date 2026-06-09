@@ -242,16 +242,16 @@ def _detect_projection_region(frame: np.ndarray) -> np.ndarray:
     # Pass 1: Canny-based aggressive quad detection
     result = _try_projection_quad(frame)
     if result is not None:
-        return _normalize_illumination(_remove_ui_chrome(result))
+        return _remove_ui_chrome(result)
 
     # Pass 2: Bright-rect with lower threshold (projections can be dim: ~120)
     result = _try_bright_rect(frame, brightness_threshold=120, area_min=0.07)
     if result is not None and result.size > 0:
-        return _normalize_illumination(_remove_ui_chrome(result))
+        return _remove_ui_chrome(result)
 
     # Pass 3: Adaptive centre-crop
     result = _adaptive_centre_crop(frame)
-    return _normalize_illumination(_remove_ui_chrome(result))
+    return _remove_ui_chrome(result)
 
 
 # ── Quad Detection Variants ───────────────────────────────────────────────────
@@ -469,7 +469,7 @@ def _remove_ui_chrome(region: np.ndarray, min_bright_fraction: float = 0.06) -> 
 
 # ── Illumination Normalization (for projection/camera scenarios) ──────────────
 
-def _normalize_illumination(region: np.ndarray) -> np.ndarray:
+def _normalize_illumination(region: np.ndarray, scenario: str) -> np.ndarray:
     """
     Normalize uneven illumination common in projector setups (brighter center,
     darker edges). Uses divide normalization: each pixel divided by a heavily
@@ -480,6 +480,9 @@ def _normalize_illumination(region: np.ndarray) -> np.ndarray:
     if region is None or region.size == 0:
         return region
 
+    if scenario == "screen_record":
+        return region
+
     rh, rw = region.shape[:2]
     if rh < 60 or rw < 80:
         return region
@@ -487,18 +490,23 @@ def _normalize_illumination(region: np.ndarray) -> np.ndarray:
     # Convert to float for safe division
     img_float = region.astype(np.float32)
 
-    # Heavy Gaussian blur to estimate illumination gradient
-    blur_ksize = (max(51, (rw // 4) | 1), max(51, (rh // 4) | 1))
-    illumination = cv2.GaussianBlur(img_float, blur_ksize, 0)
+    if scenario == "projection":
+        # Heavy Gaussian blur to estimate illumination gradient
+        blur_ksize = (max(51, (rw // 4) | 1), max(51, (rh // 4) | 1))
+        illumination = cv2.GaussianBlur(img_float, blur_ksize, 0)
 
-    # Divide normalization: flatten the gradient
-    normalized = img_float / (illumination + 1.0) * 128.0
-    normalized = np.clip(normalized, 0, 255).astype(np.uint8)
+        # Divide normalization: flatten the gradient
+        normalized = img_float / (illumination + 1.0) * 128.0
+        normalized = np.clip(normalized, 0, 255).astype(np.uint8)
+        clip_limit = 3.0
+    else:  # camera_screen
+        normalized = np.clip(img_float, 0, 255).astype(np.uint8)
+        clip_limit = 1.5
 
     # CLAHE with larger tile for wide illumination variation
     lab = cv2.cvtColor(normalized, cv2.COLOR_BGR2LAB)
     l_ch, a_ch, b_ch = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(16, 16))
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(16, 16))
     l_ch = clahe.apply(l_ch)
     normalized = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2BGR)
 
@@ -523,6 +531,8 @@ def detect_slide_region(frame: np.ndarray) -> Tuple[np.ndarray, str]:
 
     if region is None or region.size == 0:
         region = frame
+
+    region = _normalize_illumination(region, scenario)
 
     return region, scenario
 
@@ -618,7 +628,7 @@ def _multi_attempt_ocr(reader: easyocr.Reader,
         binary_s3 = cv2.adaptiveThreshold(
             gray_s3, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY, 31, 8
+            cv2.THRESH_BINARY, 51, 8
         )
         rgb_s3 = cv2.cvtColor(binary_s3, cv2.COLOR_GRAY2RGB)
         results = reader.readtext(
