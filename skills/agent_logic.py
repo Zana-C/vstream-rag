@@ -136,7 +136,21 @@ class VisionStreamAgent:
             if gemini_model.startswith("models/"):
                 gemini_model = gemini_model.replace("models/", "")
                 
-            self.llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0)
+            # Workaround for 'StreamReader.readline() got an unexpected keyword argument max_line_length' 
+            # bug in google-genai SDK when using aiohttp stream.
+            try:
+                import httpx
+                from google import genai
+                from google.genai import types
+                genai_client = genai.Client(
+                    api_key=self.api_key,
+                    http_options=types.HttpOptions(
+                        httpx_async_client=httpx.AsyncClient()
+                    )
+                )
+                self.llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0, client=genai_client)
+            except ImportError:
+                self.llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0)
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
 
