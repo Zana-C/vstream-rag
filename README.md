@@ -1,15 +1,16 @@
 # VisionStream AI (vstream-rag)
 
-VisionStream is an intelligent RAG (Retrieval-Augmented Generation) platform designed to extract, index, and query text from educational videos and slides. 
+VisionStream is an intelligent RAG (Retrieval-Augmented Generation) platform designed to extract, index, and query text from educational videos and slides.
 
 ## Key Features
 
-- **Video Processing & OCR**: Automatically extracts frames from uploaded videos, deduplicates them (via dHash), and uses EasyOCR to extract textual content.
+- **Video Processing & OCR**: Automatically extracts frames from uploaded videos, deduplicates them (via dHash), and uses EasyOCR to extract textual content. Includes a two-path preprocessing pipeline that applies different contrast normalization strategies for projection vs. screen-recording scenarios.
 - **RAG Architecture**: Integrates deeply with **ChromaDB** using `paraphrase-multilingual-MiniLM-L12-v2` embeddings for fast, multilingual document retrieval via MMR (Maximal Marginal Relevance) search.
 - **Multi-Model Support**: Chat with your slides using your preferred LLM provider:
-  - **Ollama** (Local execution, e.g., `qwen2.5:14b`)
+  - **Ollama** (Local execution, e.g., `qwen2.5:14b`) — configurable server URL (default: `http://127.0.0.1:11434`)
   - **OpenAI** (e.g., `gpt-4o`)
-  - **Google Gemini** (e.g., `gemini-1.5-pro`)
+  - **Google Gemini** (e.g., `gemini-2.5-flash`)
+- **Configurable AI Parameters**: Temperature, Top P, and Max Tokens are all adjustable from the Settings panel with a one-click reset to defaults.
 - **Interactive Chat Interface**: A modern chat UI with session memory, auto-titling based on conversation context, and message management.
 - **Database Manager**: Directly view, search, and inline-edit OCR-extracted texts. Edits are automatically synced and re-embedded into the ChromaDB vector space.
 
@@ -30,9 +31,8 @@ VisionStream is an intelligent RAG (Retrieval-Augmented Generation) platform des
 1. Create a virtual environment and install dependencies:
    ```bash
    pip install -r requirements.txt
-   pip install langchain-google-genai # For Gemini support
    ```
-2. Run the FastAPI server:
+2. Run the FastAPI server from the project root:
    ```bash
    python -m uvicorn src.backend.main:app --reload
    ```
@@ -49,4 +49,11 @@ VisionStream is an intelligent RAG (Retrieval-Augmented Generation) platform des
    ```
 
 ### Settings Configuration
-Once the frontend is running, navigate to the Chat interface and click the Settings icon to configure your LLM provider and API keys.
+Once the frontend is running, navigate to the Chat interface and click the **Settings (⚙)** icon to configure:
+- **LLM Provider**: Ollama, OpenAI, or Google Gemini
+- **Model Name**: e.g. `qwen2.5:14b`, `gpt-4o`, `gemini-2.5-flash`
+- **Ollama Server URL**: Customize the port if Ollama runs on a non-default address
+- **API Key**: Required for OpenAI and Gemini providers
+- **AI Parameters**: Temperature, Top P, Max Tokens
+
+> **Note:** API keys are stored only in `workspace/settings.json` (excluded from git via `.gitignore`) and are never committed to the repository.
