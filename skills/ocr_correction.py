@@ -6,10 +6,10 @@ metinleri, yerel bir LLM'in dil yeteneklerini ve Structured Output (Yapılandır
 mimarisini kullanarak temizler ve garantili bir JSON/Dict formatında döndürür.
 """
 
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import Optional
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_experimental.llms.ollama_functions import OllamaFunctions
+from langchain_ollama import ChatOllama
 
 # 1. Pydantic Şeması (Veri formatını kilitler)
 class CleanedSlideData(BaseModel):
@@ -45,7 +45,7 @@ def process_and_clean_ocr(raw_ocr_text: str, model_name: str = "qwen2.5:14b") ->
     """
     try:
         # LLM Tanımlaması (Temperature 0 = Maksimum kesinlik)
-        llm = OllamaFunctions(model=model_name, temperature=0.0)
+        llm = ChatOllama(model=model_name, temperature=0.0)
         
         # Pydantic şemasını LLM'e dayatıyoruz
         structured_llm = llm.with_structured_output(schema=CleanedSlideData)
