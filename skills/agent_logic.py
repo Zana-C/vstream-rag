@@ -96,10 +96,12 @@ class VisionStreamAgent:
         provider: str = "ollama",       # "ollama", "openai", "gemini"
         model_name: str = "qwen2.5:14b",
         api_key: Optional[str] = None,
+        base_url: Optional[str] = "http://127.0.0.1:11434",
     ):
         self.provider   = provider
         self.model_name = model_name
         self.api_key    = api_key
+        self.base_url   = base_url
 
         os.makedirs(_CHROMA_DIR, exist_ok=True)
 
@@ -114,7 +116,7 @@ class VisionStreamAgent:
         if self.provider == "ollama":
             if _OllamaClass is None:
                 raise ImportError("Ollama LLM package not found.")
-            self.llm = _OllamaClass(model=self.model_name)
+            self.llm = _OllamaClass(model=self.model_name, base_url=self.base_url)
         elif self.provider == "openai":
             if not self.api_key:
                 raise ValueError("API key required for OpenAI.")

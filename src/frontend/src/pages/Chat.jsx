@@ -19,7 +19,7 @@ const Chat = () => {
 
   // Settings
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState({ provider: 'ollama', model_name: 'qwen2.5:14b', api_key: '' });
+  const [settings, setSettings] = useState({ provider: 'ollama', model_name: 'qwen2.5:14b', api_key: '', base_url: 'http://127.0.0.1:11434' });
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Parse session from URL
@@ -325,6 +325,19 @@ const Chat = () => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm bg-gray-50"
                 />
               </div>
+
+              {settings.provider === 'ollama' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ollama Server URL</label>
+                  <input 
+                    type="text" 
+                    value={settings.base_url || 'http://127.0.0.1:11434'}
+                    onChange={e => setSettings({...settings, base_url: e.target.value})}
+                    placeholder="http://127.0.0.1:11434"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm bg-gray-50"
+                  />
+                </div>
+              )}
 
               {settings.provider !== 'ollama' && (
                 <div>

@@ -54,6 +54,7 @@ async def lifespan(app: FastAPI):
     provider = "ollama"
     model_name = "qwen2.5:14b"
     api_key = None
+    base_url = "http://127.0.0.1:11434"
     if os.path.exists(settings_path):
         try:
             with open(settings_path, "r") as f:
@@ -61,11 +62,12 @@ async def lifespan(app: FastAPI):
                 provider = s.get("provider", "ollama")
                 model_name = s.get("model_name", "qwen2.5:14b")
                 api_key = s.get("api_key")
+                base_url = s.get("base_url", "http://127.0.0.1:11434")
         except:
             pass
 
     app.state.agent = await loop.run_in_executor(None, lambda: VisionStreamAgent(
-        provider=provider, model_name=model_name, api_key=api_key
+        provider=provider, model_name=model_name, api_key=api_key, base_url=base_url
     ))
     print("[VisionStream] AI model ready. All endpoints available.")
     yield
@@ -101,6 +103,7 @@ class SettingsModel(BaseModel):
     provider: str
     model_name: str
     api_key: Optional[str] = None
+    base_url: Optional[str] = "http://127.0.0.1:11434"
 
 @app.get("/api/settings")
 def get_settings():
@@ -112,7 +115,7 @@ def get_settings():
                 return json.load(f)
         except:
             pass
-    return {"provider": "ollama", "model_name": "qwen2.5:14b", "api_key": ""}
+    return {"provider": "ollama", "model_name": "qwen2.5:14b", "api_key": "", "base_url": "http://127.0.0.1:11434"}
 
 @app.post("/api/settings")
 def update_settings(settings: SettingsModel):
@@ -128,7 +131,8 @@ def update_settings(settings: SettingsModel):
         app.state.agent = VisionStreamAgent(
             provider=settings.provider,
             model_name=settings.model_name,
-            api_key=settings.api_key
+            api_key=settings.api_key,
+            base_url=settings.base_url
         )
         return {"status": "success", "message": "Settings updated and Agent re-initialized."}
     except Exception as e:
