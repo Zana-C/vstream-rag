@@ -17,7 +17,7 @@ const VideoProcessor = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/courses');
+        const res = await fetch('http://127.0.0.1:8000/api/courses');
         const data = await res.json();
         if (data.status === 'success' && data.courses) {
           setExistingCourses(data.courses);
@@ -28,9 +28,21 @@ const VideoProcessor = () => {
 
     // Check for active job recovery on mount
     const activeJobId = sessionStorage.getItem('active_job_id');
+    const completedJobId = sessionStorage.getItem('completed_job_id');
+
     if (activeJobId) {
       setIsProcessing(true);
       pollStatus(activeJobId);
+    } else if (completedJobId) {
+      // Recover slides if they were completed but not yet saved/cleared
+      fetch(`http://127.0.0.1:8000/api/jobs/${completedJobId}/status`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'completed' && data.slides) {
+            setSlides(data.slides);
+          }
+        })
+        .catch(err => console.error("Error recovering slides:", err));
     }
 
     // Cleanup timeout on unmount
@@ -43,13 +55,14 @@ const VideoProcessor = () => {
 
   const pollStatus = async (jobId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/jobs/${jobId}/status`);
+      const res = await fetch(`http://127.0.0.1:8000/api/jobs/${jobId}/status`);
       const data = await res.json();
       if (data.status === 'completed') {
         setProgress(100);
         setSlides(data.slides);
         setIsProcessing(false);
         sessionStorage.removeItem('active_job_id');
+        sessionStorage.setItem('completed_job_id', jobId);
       } else if (data.status === 'error') {
         alert('Error processing video: ' + data.message);
         setIsProcessing(false);
@@ -77,8 +90,10 @@ const VideoProcessor = () => {
     setIsProcessing(true);
     setProgress(0);
     setSlides([]);
+    sessionStorage.removeItem('completed_job_id'); // Clear previous completed job
+
     try {
-      const res = await fetch('http://localhost:8000/api/video/process', {
+      const res = await fetch('http://127.0.0.1:8000/api/video/process', {
         method: 'POST',
         body: formData,
       });
@@ -107,7 +122,7 @@ const VideoProcessor = () => {
     }));
 
     try {
-      const res = await fetch('http://localhost:8000/api/slides/save', {
+      const res = await fetch('http://127.0.0.1:8000/api/slides/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ course, slides: slidesData })
@@ -116,6 +131,7 @@ const VideoProcessor = () => {
       if (data.status === 'success') {
         alert(`Saved ${data.saved_count} slides to Database!`);
         setSlides([]);
+        sessionStorage.removeItem('completed_job_id'); // Clear from session storage after saving
       } else {
         alert('Error saving slides: ' + data.message);
       }
@@ -201,6 +217,19 @@ const VideoProcessor = () => {
                   {existingCourses.map(c => <option key={c} value={c} />)}
                 </datalist>
               </div>
+              {slides.length > 0 && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to clear these extracted slides?')) {
+                      setSlides([]);
+                      sessionStorage.removeItem('completed_job_id');
+                    }
+                  }}
+                  className="bg-white border border-gray-300 text-gray-700 px-4 py-1.5 rounded text-sm font-medium hover:bg-gray-50 flex items-center gap-2 shadow-sm"
+                >
+                  Clear Screen
+                </button>
+              )}
               <button 
                 onClick={handleSave}
                 disabled={isSaving || slides.length === 0 || !course.trim()}
