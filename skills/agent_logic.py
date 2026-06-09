@@ -129,7 +129,10 @@ class VisionStreamAgent:
                 raise ValueError("API key required for Gemini.")
             os.environ["GOOGLE_API_KEY"] = self.api_key
             
-            gemini_model = (self.model_name or "gemini-1.5-pro").strip()
+            gemini_model = (self.model_name or "").strip()
+            if not gemini_model or "1.5" in gemini_model:
+                gemini_model = "gemini-2.5-flash"
+                
             if gemini_model.startswith("models/"):
                 gemini_model = gemini_model.replace("models/", "")
                 
