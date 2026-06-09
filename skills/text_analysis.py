@@ -766,6 +766,15 @@ def extract_text_from_frame(frame: np.ndarray) -> dict:
     # Step 6: filter UI artefacts
     final_text = _filter_ui_text(raw_text)
 
+    # Step 7: V3.5 Hybrid LLM Correction
+    if len(final_text.strip()) > 10:
+        try:
+            from skills.ocr_correction import process_and_clean_ocr
+            cleaned_dict = process_and_clean_ocr(final_text)
+            final_text = json.dumps(cleaned_dict, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[!] Warning: OCR correction failed, falling back to raw OCR. Error: {e}")
+
     return {
         "text":         final_text,
         "scenario":     scenario,
