@@ -363,7 +363,7 @@ const Chat = () => {
                       <label className="text-sm font-semibold text-gray-700">Temperature</label>
                       <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{(settings.temperature ?? 0.7).toFixed(2)}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mb-1.5">Düşük değer → tutarlı/tahmin edilebilir. Yüksek değer → yaratıcı/çeşitli.</p>
+                    <p className="text-xs text-gray-400 mb-1.5">Lower = more focused & deterministic. Higher = more creative & varied.</p>
                     <input type="range" min="0" max="2" step="0.05"
                       value={settings.temperature ?? 0.7}
                       onChange={e => setSettings({...settings, temperature: parseFloat(e.target.value)})}
@@ -377,7 +377,7 @@ const Chat = () => {
                       <label className="text-sm font-semibold text-gray-700">Top P</label>
                       <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{(settings.top_p ?? 0.9).toFixed(2)}</span>
                     </div>
-                    <p className="text-xs text-gray-400 mb-1.5">Modelin en olası ilk %P'lik token havuzundan seçim yapmasını sağlar. Düşük değer → odaklı, yüksek değer → geniş kelime haznesi.</p>
+                    <p className="text-xs text-gray-400 mb-1.5">Samples from the top P% of probable tokens. Lower = focused output, higher = broader vocabulary.</p>
                     <input type="range" min="0" max="1" step="0.05"
                       value={settings.top_p ?? 0.9}
                       onChange={e => setSettings({...settings, top_p: parseFloat(e.target.value)})}
@@ -387,7 +387,7 @@ const Chat = () => {
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-0.5">Max Tokens</label>
-                    <p className="text-xs text-gray-400 mb-1.5">Modelin tek bir yanıtta üretebileceği maksimum kelime/karakter parçası sayısı. Uzun yanıtlar için artırın.</p>
+                    <p className="text-xs text-gray-400 mb-1.5">Maximum number of tokens the model can generate in a single response. Increase for longer answers.</p>
                     <input type="number" min="128" max="8192" step="128"
                       value={settings.max_tokens ?? 2048}
                       onChange={e => setSettings({...settings, max_tokens: parseInt(e.target.value)})}
