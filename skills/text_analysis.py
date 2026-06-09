@@ -471,11 +471,9 @@ def _remove_ui_chrome(region: np.ndarray, min_bright_fraction: float = 0.06) -> 
 
 def _normalize_illumination(region: np.ndarray, scenario: str) -> np.ndarray:
     """
-    Normalize uneven illumination common in projector setups (brighter center,
-    darker edges). Uses divide normalization: each pixel divided by a heavily
-    blurred version of itself, then rescaled.
-
-    Also applies CLAHE for local contrast enhancement on dark projections.
+    Two-Path Preprocessing based on scenario.
+    Path A (projection): Blur + Divide Normalization + CLAHE (16x16)
+    Path B (camera_screen / screen_record): Bypass Divide. Grayscale -> CLAHE (8x8) -> BGR
     """
     if region is None or region.size == 0:
         return region
@@ -487,30 +485,35 @@ def _normalize_illumination(region: np.ndarray, scenario: str) -> np.ndarray:
     if rh < 60 or rw < 80:
         return region
 
-    # Convert to float for safe division
-    img_float = region.astype(np.float32)
-
     if scenario == "projection":
-        # Heavy Gaussian blur to estimate illumination gradient
+        # Path A: Blur + Divide Normalization
+        img_float = region.astype(np.float32)
         blur_ksize = (max(51, (rw // 4) | 1), max(51, (rh // 4) | 1))
         illumination = cv2.GaussianBlur(img_float, blur_ksize, 0)
 
         # Divide normalization: flatten the gradient
         normalized = img_float / (illumination + 1.0) * 128.0
         normalized = np.clip(normalized, 0, 255).astype(np.uint8)
-        clip_limit = 3.0
-    else:  # camera_screen
-        normalized = np.clip(img_float, 0, 255).astype(np.uint8)
-        clip_limit = 1.5
 
-    # CLAHE with larger tile for wide illumination variation
-    lab = cv2.cvtColor(normalized, cv2.COLOR_BGR2LAB)
-    l_ch, a_ch, b_ch = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(16, 16))
-    l_ch = clahe.apply(l_ch)
-    normalized = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2BGR)
+        # CLAHE with larger tile for wide illumination variation
+        lab = cv2.cvtColor(normalized, cv2.COLOR_BGR2LAB)
+        l_ch, a_ch, b_ch = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(16, 16))
+        l_ch = clahe.apply(l_ch)
+        normalized = cv2.cvtColor(cv2.merge([l_ch, a_ch, b_ch]), cv2.COLOR_LAB2BGR)
+        return normalized
 
-    return normalized
+    else:
+        # Path B: camera_screen (and fallback)
+        # Bypass Divide Normalization.
+        # Apply localized contrast boost using CLAHE (8x8 grid) on Grayscale.
+        gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        gray_clahe = clahe.apply(gray)
+        
+        # Convert back to BGR so downstream OCR multi-stacks (which expect BGR) don't crash
+        bgr_clahe = cv2.cvtColor(gray_clahe, cv2.COLOR_GRAY2BGR)
+        return bgr_clahe
 
 
 # ── Public: Detect Slide Region (scenario-aware) ──────────────────────────────
@@ -701,6 +704,7 @@ _UI_PATTERNS = [
     r'^(?:Normal|Outline View|Slide Sorter|'
     r'Notes Page|Reading View)$',               # View names
     r'^(?:Click to add|Tıklayın).*',            # Placeholder text
+    r'.*Microsoft 365 Denemenizi Başlatın.*',   # Aggressive UI artifact filter
 ]
 _UI_RE = [re.compile(p, re.IGNORECASE) for p in _UI_PATTERNS]
 
