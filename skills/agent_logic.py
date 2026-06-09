@@ -128,7 +128,12 @@ class VisionStreamAgent:
             if not self.api_key:
                 raise ValueError("API key required for Gemini.")
             os.environ["GOOGLE_API_KEY"] = self.api_key
-            self.llm = ChatGoogleGenerativeAI(model=self.model_name or "gemini-1.5-pro", temperature=0)
+            
+            gemini_model = (self.model_name or "gemini-1.5-pro").strip()
+            if gemini_model.startswith("models/"):
+                gemini_model = gemini_model.replace("models/", "")
+                
+            self.llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0)
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
 
