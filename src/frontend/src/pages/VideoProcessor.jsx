@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Play, Save } from 'lucide-react';
 
 const VideoProcessor = () => {
@@ -12,6 +12,8 @@ const VideoProcessor = () => {
   const [sampleRate, setSampleRate] = useState(1.0);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.85);
 
+  const pollingTimeout = useRef(null);
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -23,6 +25,20 @@ const VideoProcessor = () => {
       } catch(err) { console.error(err); }
     };
     fetchCourses();
+
+    // Check for active job recovery on mount
+    const activeJobId = sessionStorage.getItem('active_job_id');
+    if (activeJobId) {
+      setIsProcessing(true);
+      pollStatus(activeJobId);
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (pollingTimeout.current) {
+        clearTimeout(pollingTimeout.current);
+      }
+    };
   }, []);
 
   const pollStatus = async (jobId) => {
@@ -33,16 +49,19 @@ const VideoProcessor = () => {
         setProgress(100);
         setSlides(data.slides);
         setIsProcessing(false);
+        sessionStorage.removeItem('active_job_id');
       } else if (data.status === 'error') {
         alert('Error processing video: ' + data.message);
         setIsProcessing(false);
+        sessionStorage.removeItem('active_job_id');
       } else {
         setProgress(data.progress || 0);
-        setTimeout(() => pollStatus(jobId), 2000);
+        pollingTimeout.current = setTimeout(() => pollStatus(jobId), 2000);
       }
     } catch (err) {
       alert('Network error while polling status.');
       setIsProcessing(false);
+      sessionStorage.removeItem('active_job_id');
     }
   };
 
@@ -65,6 +84,7 @@ const VideoProcessor = () => {
       });
       const data = await res.json();
       if (data.status === 'success' && data.job_id) {
+        sessionStorage.setItem('active_job_id', data.job_id);
         pollStatus(data.job_id);
       } else {
         alert('Error starting video processing: ' + data.message);
