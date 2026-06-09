@@ -97,11 +97,17 @@ class VisionStreamAgent:
         model_name: str = "qwen2.5:14b",
         api_key: Optional[str] = None,
         base_url: Optional[str] = "http://127.0.0.1:11434",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+        top_p: float = 0.9,
     ):
-        self.provider   = provider
-        self.model_name = model_name
-        self.api_key    = api_key
-        self.base_url   = base_url
+        self.provider    = provider
+        self.model_name  = model_name
+        self.api_key     = api_key
+        self.base_url    = base_url
+        self.temperature = temperature
+        self.max_tokens  = max_tokens
+        self.top_p       = top_p
 
         os.makedirs(_CHROMA_DIR, exist_ok=True)
 
@@ -116,12 +122,22 @@ class VisionStreamAgent:
         if self.provider == "ollama":
             if _OllamaClass is None:
                 raise ImportError("Ollama LLM package not found.")
-            self.llm = _OllamaClass(model=self.model_name, base_url=self.base_url)
+            self.llm = _OllamaClass(
+                model=self.model_name,
+                base_url=self.base_url,
+                temperature=self.temperature,
+                num_predict=self.max_tokens,
+            )
         elif self.provider == "openai":
             if not self.api_key:
                 raise ValueError("API key required for OpenAI.")
             os.environ["OPENAI_API_KEY"] = self.api_key
-            self.llm = ChatOpenAI(model=self.model_name or "gpt-4o", temperature=0)
+            self.llm = ChatOpenAI(
+                model=self.model_name or "gpt-4o",
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                top_p=self.top_p,
+            )
         elif self.provider == "gemini":
             if ChatGoogleGenerativeAI is None:
                 raise ImportError("langchain-google-genai package not found. pip install langchain-google-genai")
@@ -136,7 +152,12 @@ class VisionStreamAgent:
             if gemini_model.startswith("models/"):
                 gemini_model = gemini_model.replace("models/", "")
                 
-            self.llm = ChatGoogleGenerativeAI(model=gemini_model, temperature=0)
+            self.llm = ChatGoogleGenerativeAI(
+                model=gemini_model,
+                temperature=self.temperature,
+                max_output_tokens=self.max_tokens,
+                top_p=self.top_p,
+            )
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
 

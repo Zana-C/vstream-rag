@@ -55,6 +55,9 @@ async def lifespan(app: FastAPI):
     model_name = "qwen2.5:14b"
     api_key = None
     base_url = "http://127.0.0.1:11434"
+    temperature = 0.7
+    max_tokens = 2048
+    top_p = 0.9
     if os.path.exists(settings_path):
         try:
             with open(settings_path, "r") as f:
@@ -63,11 +66,15 @@ async def lifespan(app: FastAPI):
                 model_name = s.get("model_name", "qwen2.5:14b")
                 api_key = s.get("api_key")
                 base_url = s.get("base_url", "http://127.0.0.1:11434")
+                temperature = s.get("temperature", 0.7)
+                max_tokens = s.get("max_tokens", 2048)
+                top_p = s.get("top_p", 0.9)
         except:
             pass
 
     app.state.agent = await loop.run_in_executor(None, lambda: VisionStreamAgent(
-        provider=provider, model_name=model_name, api_key=api_key, base_url=base_url
+        provider=provider, model_name=model_name, api_key=api_key, base_url=base_url,
+        temperature=temperature, max_tokens=max_tokens, top_p=top_p
     ))
     print("[VisionStream] AI model ready. All endpoints available.")
     yield
@@ -104,6 +111,9 @@ class SettingsModel(BaseModel):
     model_name: str
     api_key: Optional[str] = None
     base_url: Optional[str] = "http://127.0.0.1:11434"
+    temperature: float = 0.7
+    max_tokens: int = 2048
+    top_p: float = 0.9
 
 @app.get("/api/settings")
 def get_settings():
@@ -115,7 +125,7 @@ def get_settings():
                 return json.load(f)
         except:
             pass
-    return {"provider": "ollama", "model_name": "qwen2.5:14b", "api_key": "", "base_url": "http://127.0.0.1:11434"}
+    return {"provider": "ollama", "model_name": "qwen2.5:14b", "api_key": "", "base_url": "http://127.0.0.1:11434", "temperature": 0.7, "max_tokens": 2048, "top_p": 0.9}
 
 @app.post("/api/settings")
 def update_settings(settings: SettingsModel):
@@ -132,7 +142,10 @@ def update_settings(settings: SettingsModel):
             provider=settings.provider,
             model_name=settings.model_name,
             api_key=settings.api_key,
-            base_url=settings.base_url
+            base_url=settings.base_url,
+            temperature=settings.temperature,
+            max_tokens=settings.max_tokens,
+            top_p=settings.top_p,
         )
         return {"status": "success", "message": "Settings updated and Agent re-initialized."}
     except Exception as e:

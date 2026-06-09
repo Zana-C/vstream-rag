@@ -19,7 +19,8 @@ const Chat = () => {
 
   // Settings
   const [showSettings, setShowSettings] = useState(false);
-  const [settings, setSettings] = useState({ provider: 'ollama', model_name: 'qwen2.5:14b', api_key: '', base_url: 'http://127.0.0.1:11434' });
+  const DEFAULT_SETTINGS = { provider: 'ollama', model_name: 'qwen2.5:14b', api_key: '', base_url: 'http://127.0.0.1:11434', temperature: 0.7, max_tokens: 2048, top_p: 0.9 };
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Parse session from URL
@@ -351,15 +352,65 @@ const Chat = () => {
                   />
                 </div>
               )}
+
+              {/* AI Parameters */}
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">AI Parameters</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="text-sm font-semibold text-gray-700">Temperature</label>
+                      <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{(settings.temperature ?? 0.7).toFixed(2)}</span>
+                    </div>
+                    <input type="range" min="0" max="2" step="0.05"
+                      value={settings.temperature ?? 0.7}
+                      onChange={e => setSettings({...settings, temperature: parseFloat(e.target.value)})}
+                      className="w-full accent-blue-600"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-0.5"><span>Precise</span><span>Creative</span></div>
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <label className="text-sm font-semibold text-gray-700">Top P</label>
+                      <span className="text-sm font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{(settings.top_p ?? 0.9).toFixed(2)}</span>
+                    </div>
+                    <input type="range" min="0" max="1" step="0.05"
+                      value={settings.top_p ?? 0.9}
+                      onChange={e => setSettings({...settings, top_p: parseFloat(e.target.value)})}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Max Tokens</label>
+                    <input type="number" min="128" max="8192" step="128"
+                      value={settings.max_tokens ?? 2048}
+                      onChange={e => setSettings({...settings, max_tokens: parseInt(e.target.value)})}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-sm bg-gray-50 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
-              <button onClick={() => setShowSettings(false)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 font-medium rounded-lg transition text-sm">
-                Cancel
+            <div className="mt-6 flex justify-between items-center gap-3 pt-4 border-t border-gray-100">
+              <button 
+                onClick={() => setSettings(s => ({ ...DEFAULT_SETTINGS, api_key: s.api_key }))} 
+                className="px-4 py-2.5 text-gray-500 hover:bg-gray-100 font-medium rounded-lg transition text-sm border border-gray-200"
+                title="Reset AI parameters to defaults"
+              >
+                ↺ Reset Defaults
               </button>
-              <button onClick={handleSaveSettings} disabled={savingSettings} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition flex items-center gap-2 text-sm font-medium disabled:opacity-70">
-                <Save size={16} /> {savingSettings ? 'Saving...' : 'Save Settings'}
-              </button>
+              <div className="flex gap-3">
+                <button onClick={() => setShowSettings(false)} className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 font-medium rounded-lg transition text-sm">
+                  Cancel
+                </button>
+                <button onClick={handleSaveSettings} disabled={savingSettings} className="px-5 py-2.5 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition flex items-center gap-2 text-sm font-medium disabled:opacity-70">
+                  <Save size={16} /> {savingSettings ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
